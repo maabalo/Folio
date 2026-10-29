@@ -1,0 +1,2045 @@
+/* ==========================================================================
+   Folio — style.css
+   --------------------------------------------------------------------------
+   Mobile-first: base rules target phones; wider screens are layered on
+   with min-width media queries at the end of the file.
+
+   Table of contents
+     01. Design tokens (colours, fonts, sizes) — light + dark themes
+     02. Base / reset
+     03. Utilities (skip link, kbd, text helpers, caret)
+     04. Buttons
+     05. Top bar & brand
+     06. Settings menu
+     07. Layout, sidebar drawer & scrim
+     08. File explorer (filter + list)
+     09. Empty state (terminal card)
+     10. Drag & drop overlay
+     11. Document header & tabs
+     12. Preview blocks (code, tables, PDF, slides, prose…)
+     13. Details tab
+     14. Toast
+     15. Status bar
+     16. Breakpoint ≥ 600px (tablet)
+     17. Breakpoint ≥ 900px (desktop)
+     18. Input & motion preferences
+     19. Help guide dialog
+
+   To change the look, start with section 01 — every colour, font and
+   radius below reads from these variables.
+   Text colours meet WCAG 2.1 AA contrast (4.5:1) in both themes.
+   ========================================================================== */
+
+
+/* ==========================================================================
+   01. Design tokens
+   ========================================================================== */
+
+/* Light theme (default) */
+:root {
+  /* Surfaces: page → panels → subtle fills → hover */
+  --bg: #f6f8fa;
+  --surface: #ffffff;
+  --subtle: #eff2f5;
+  --hover: #e8ecf0;
+  --border: #dde2e7;
+  --border-strong: #c9d0d7;
+
+  /* Text: primary → secondary → tertiary (all ≥ 4.5:1 on --bg) */
+  --text: #0e1116;
+  --muted: #4f5964;
+  --faint: #5f6973;
+
+  /* Brand accent ("terminal green") and its readable text colour */
+  --accent: #0a7a52;
+  --accent-soft: rgba(10, 122, 82, 0.1);
+  --on-accent: #ffffff;
+
+  /* Status colours */
+  --danger: #c62832;
+  --warning: #9a6700;
+
+  /* Effects */
+  --shadow: 0 1px 2px rgba(14, 17, 22, 0.04), 0 12px 32px rgba(14, 17, 22, 0.1);
+  --scrim: rgba(14, 17, 22, 0.32);
+  --grid-line: rgba(14, 17, 22, 0.045);
+
+  /* Typography */
+  --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  /* Shape & spacing */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius: 8px;
+  --topbar: 52px;
+  --statusbar: 0px; /* becomes 26px on desktop where the status bar shows */
+  --gutter: 16px;
+
+  /* Motion */
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  color-scheme: light;
+}
+
+/* Dark theme — chosen explicitly in Settings */
+:root[data-theme="dark"] {
+  --bg: #0b0d10;
+  --surface: #101317;
+  --subtle: #15191e;
+  --hover: #1b2026;
+  --border: #232931;
+  --border-strong: #2f3741;
+  --text: #e6edf3;
+  --muted: #a3adb8;
+  --faint: #8b95a1;
+  --accent: #3ddc97;
+  --accent-soft: rgba(61, 220, 151, 0.12);
+  --on-accent: #04140d;
+  --danger: #ff7b72;
+  --warning: #e3b341;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.55);
+  --scrim: rgba(0, 0, 0, 0.55);
+  --grid-line: rgba(230, 237, 243, 0.035);
+  color-scheme: dark;
+}
+
+/* Dark theme — "Auto" setting follows the operating system.
+   Keep these values identical to the block above. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0d10;
+    --surface: #101317;
+    --subtle: #15191e;
+    --hover: #1b2026;
+    --border: #232931;
+    --border-strong: #2f3741;
+    --text: #e6edf3;
+    --muted: #a3adb8;
+    --faint: #8b95a1;
+    --accent: #3ddc97;
+    --accent-soft: rgba(61, 220, 151, 0.12);
+    --on-accent: #04140d;
+    --danger: #ff7b72;
+    --warning: #e3b341;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.55);
+    --scrim: rgba(0, 0, 0, 0.55);
+    --grid-line: rgba(230, 237, 243, 0.035);
+    color-scheme: dark;
+  }
+}
+
+
+/* ==========================================================================
+   02. Base / reset
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh; /* dvh = visible height on mobile browsers */
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Form controls don't inherit fonts by default */
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+/* The `hidden` attribute must always win over display rules below */
+[hidden] {
+  display: none !important;
+}
+
+/* Visible keyboard focus everywhere (WCAG 2.4.7) */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+
+/* ==========================================================================
+   03. Utilities
+   ========================================================================== */
+
+/* "Skip to content" link — off-screen until focused with Tab */
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 100;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-family: var(--mono);
+  font-size: 12px;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+/* Keyboard key, e.g. <kbd>O</kbd> */
+kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  line-height: 1;
+}
+
+/* Text colour helpers used in the terminal-style snippets */
+.t-accent {
+  color: var(--accent);
+}
+
+.t-muted {
+  color: var(--faint);
+}
+
+/* Blinking block cursor (stops when reduced motion is on — section 18) */
+.caret {
+  display: inline-block;
+  width: 0.55em;
+  height: 1.05em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: var(--accent);
+  animation: blink 1.1s steps(1) infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Shared entrance animations */
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+
+/* ==========================================================================
+   04. Buttons
+   ========================================================================== */
+
+/* Standard outlined button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.btn:hover {
+  border-color: var(--faint);
+  background: var(--subtle);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+/* Primary (filled accent) button */
+.btn-primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.btn-primary:hover {
+  border-color: var(--accent);
+  background: var(--accent);
+  filter: brightness(1.08);
+}
+
+/* Top-bar primary button: icon only on phones, label added at ≥ 600px */
+.topbar .btn-primary {
+  width: 34px;
+  padding: 0;
+}
+
+.btn-label {
+  display: none;
+}
+
+/* Square icon-only button */
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.icon-btn:hover,
+.icon-btn[aria-expanded="true"] {
+  border-color: var(--border);
+  background: var(--subtle);
+  color: var(--text);
+}
+
+/* Small text-only button, e.g. "clear" */
+.text-btn {
+  padding: 2px 6px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.text-btn:hover {
+  color: var(--danger);
+}
+
+
+/* ==========================================================================
+   05. Top bar & brand
+   ========================================================================== */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: calc(var(--topbar) + env(safe-area-inset-top, 0px));
+  padding: env(safe-area-inset-top, 0px) var(--gutter) 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg); /* fallback for browsers without color-mix() */
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: saturate(160%) blur(12px);
+  -webkit-backdrop-filter: saturate(160%) blur(12px);
+}
+
+.topbar-start,
+.topbar-end {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* "> folio▌" */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 4px;
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.brand-prompt {
+  color: var(--accent);
+}
+
+.brand .caret {
+  width: 8px;
+  height: 16px;
+  margin-left: -4px;
+}
+
+
+/* ==========================================================================
+   06. Settings menu
+   ========================================================================== */
+
+.settings {
+  position: relative;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(272px, calc(100vw - 2 * var(--gutter)));
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  animation: rise 0.16s var(--ease);
+}
+
+/* Section labels styled like code comments: "// appearance" */
+.menu-label {
+  margin: 0 0 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--faint);
+}
+
+.menu-label:not(:first-child) {
+  margin-top: 18px;
+}
+
+/* Light / dark / auto switch */
+.segmented {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--subtle);
+}
+
+.segmented button {
+  height: 28px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.segmented button:hover {
+  color: var(--text);
+}
+
+.segmented button[aria-checked="true"] {
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+/* Keyboard shortcut list */
+.shortcuts {
+  margin: 0;
+}
+
+.shortcuts div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 0;
+  font-size: 13px;
+}
+
+.shortcuts dt {
+  color: var(--muted);
+}
+
+.shortcuts dd {
+  display: flex;
+  gap: 4px;
+  margin: 0;
+}
+
+
+/* ==========================================================================
+   07. Layout, sidebar drawer & scrim
+   Phones: the sidebar is an off-canvas drawer that slides in from the left.
+   Desktop (section 17) turns it into a permanent column.
+   ========================================================================== */
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  width: min(320px, 86vw);
+  padding-top: env(safe-area-inset-top, 0px);
+  border-right: 1px solid var(--border);
+  background: var(--bg);
+  transform: translateX(-100%);
+  transition: transform 0.28s var(--ease);
+}
+
+.sidebar.is-open {
+  transform: translateX(0);
+  box-shadow: var(--shadow);
+}
+
+/* Dimmed backdrop behind the open drawer */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: var(--scrim);
+  animation: fade 0.2s var(--ease);
+}
+
+/* Stops the page behind the open drawer from scrolling */
+body.drawer-open {
+  overflow: hidden;
+}
+
+.viewer {
+  min-width: 0;
+  outline: none; /* focus target of the skip link; no ring needed */
+}
+
+
+/* ==========================================================================
+   08. File explorer
+   ========================================================================== */
+
+/* "EXPLORER 12        clear" */
+.sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 18px 10px;
+}
+
+.sidebar-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.count {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--subtle);
+  color: var(--faint);
+  font-weight: 500;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Filter box --- */
+.filter-row {
+  position: relative;
+  margin: 0 12px 8px;
+}
+
+.filter-icon {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  color: var(--faint);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.filter-input {
+  width: 100%;
+  height: 32px;
+  padding: 0 34px 0 30px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-family: var(--mono);
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.filter-input::placeholder {
+  color: var(--faint);
+}
+
+.filter-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* Hide the browser's own clear (×) button for a cleaner look */
+.filter-input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+
+/* "/" hint inside the filter box; hidden while typing */
+.filter-kbd {
+  position: absolute;
+  top: 50%;
+  right: 7px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.filter-input:focus + .filter-kbd,
+.filter-input:not(:placeholder-shown) + .filter-kbd {
+  display: none;
+}
+
+/* --- File list: scrolls on its own, independent of the page --- */
+.file-list {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0 8px calc(16px + env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding-block: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+  list-style: none;
+  /* Soft fade at the bottom hints that the list scrolls */
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent);
+}
+
+/* Thin scrollbar for Safari / Chrome (Firefox uses scrollbar-width above) */
+.file-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.file-list::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: var(--border-strong) padding-box;
+}
+
+.file-list::-webkit-scrollbar-thumb:hover {
+  background: var(--faint) padding-box;
+}
+
+.list-empty {
+  margin: 0;
+  padding: 4px 18px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--faint);
+}
+
+/* --- One file row --- */
+.file-item {
+  position: relative;
+  margin-bottom: 1px;
+}
+
+.file-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 36px 7px 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.file-btn:hover {
+  background: var(--subtle);
+}
+
+/* Selected row: tinted background + accent bar on the left */
+.file-item.is-active .file-btn {
+  background: var(--hover);
+}
+
+.file-item.is-active .file-btn::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 0;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+/* Extension badge, e.g. "PDF" */
+.ext-tag {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 22px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.file-item.is-active .ext-tag {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.file-meta {
+  min-width: 0;
+}
+
+.file-name {
+  display: block;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.file-sub {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--faint);
+}
+
+/* Remove (×) — always visible on touch; hover-reveal on mouse (section 18) */
+.remove-btn {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--faint);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: opacity 0.12s, background 0.12s, color 0.12s;
+}
+
+.remove-btn:hover {
+  background: var(--border);
+  color: var(--danger);
+}
+
+
+/* ==========================================================================
+   09. Empty state (terminal card)
+   ========================================================================== */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100dvh - var(--topbar) - 2 * var(--gutter));
+  margin: var(--gutter);
+  padding: 48px 20px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  text-align: center;
+  /* Faint engineering-paper grid */
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: -1px -1px;
+}
+
+/* Mini terminal window */
+.terminal {
+  width: min(360px, 100%);
+  margin-bottom: 32px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  text-align: left;
+}
+
+.terminal-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--subtle);
+}
+
+.terminal-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.terminal-dots i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--border-strong);
+}
+
+.terminal-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--faint);
+}
+
+.terminal-body {
+  margin: 0;
+  padding: 16px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+.empty-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.empty-text {
+  max-width: 360px;
+  margin: 8px 0 0;
+  color: var(--muted);
+}
+
+.empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.empty-fine {
+  margin: 24px 0 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--faint);
+}
+
+
+/* ==========================================================================
+   10. Drag & drop overlay
+   ========================================================================== */
+
+.drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: var(--gutter);
+  background: var(--scrim);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  pointer-events: none; /* lets the drop event reach the window */
+  animation: fade 0.15s var(--ease);
+}
+
+.drop-overlay-text {
+  margin: 0;
+  padding: 14px 24px;
+  border: 1px dashed var(--accent);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-family: var(--mono);
+  font-size: 14px;
+  box-shadow: var(--shadow);
+}
+
+
+/* ==========================================================================
+   11. Document header & tabs
+   ========================================================================== */
+
+.doc {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 24px var(--gutter) calc(48px + env(safe-area-inset-bottom, 0px));
+  animation: rise 0.25s var(--ease);
+}
+
+/* "~/folder/file.pdf" breadcrumb above the title */
+.doc-path {
+  margin: 0 0 6px;
+  overflow: hidden;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--faint);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.doc-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.03em;
+  word-break: break-word;
+}
+
+/* Summary chips: [PDF document] [2.3 MB] [Oct 29, 2026] */
+.meta-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.meta-chips li {
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* First chip (file kind) is highlighted */
+.meta-chips li:first-child {
+  border-color: transparent;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Tabs: "01 Preview   02 Details" */
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin: 24px 0 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.tab:hover,
+.tab[aria-selected="true"] {
+  color: var(--text);
+}
+
+.tab-index {
+  font-size: 10.5px;
+  color: var(--faint);
+}
+
+.tab[aria-selected="true"] .tab-index {
+  color: var(--accent);
+}
+
+/* Animated underline on the active tab */
+.tab::after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  bottom: -1px;
+  left: 12px;
+  height: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transition: transform 0.2s var(--ease);
+}
+
+.tab[aria-selected="true"]::after {
+  transform: scaleX(1);
+}
+
+.panel {
+  animation: fade 0.2s var(--ease);
+}
+
+
+/* ==========================================================================
+   12. Preview blocks
+   ========================================================================== */
+
+/* --- Loading indicator --- */
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 32px 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- Notices (info / error), styled like log lines --- */
+.notice {
+  margin: 0 0 12px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--faint);
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.notice::before {
+  content: "info  ";
+  color: var(--faint);
+}
+
+.notice.is-error {
+  border-left-color: var(--danger);
+  color: var(--danger);
+}
+
+.notice.is-error::before {
+  content: "error ";
+}
+
+/* Error notice + "Try again" button */
+.error-block {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.error-block .notice {
+  flex: 1 1 240px;
+  margin: 0;
+}
+
+/* --- Image / video / audio stage --- */
+.stage {
+  display: grid;
+  place-items: center;
+  min-height: 240px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  /* Checkerboard reveals transparent image areas */
+  background:
+    repeating-conic-gradient(var(--subtle) 0% 25%, var(--surface) 0% 50%) 50% / 16px 16px;
+}
+
+.stage img,
+.stage video {
+  display: block;
+  max-width: 100%;
+  max-height: 72vh;
+  border-radius: var(--radius-xs);
+}
+
+.stage audio {
+  width: 100%;
+  max-width: 520px;
+}
+
+/* --- Embedded HTML page --- */
+.frame {
+  display: block;
+  width: 100%;
+  height: 72vh;
+  min-height: 360px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #ffffff;
+}
+
+/* --- PDF pages (drawn by PDF.js) --- */
+.pdf-pages {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--subtle);
+}
+
+.pdf-page {
+  width: 100%;
+  aspect-ratio: var(--page-ratio, 1 / 1.414); /* set per document by app.js */
+  border-radius: 2px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.pdf-page canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.pdf-page .notice {
+  margin: 16px;
+}
+
+/* --- Code / text with line numbers --- */
+.code {
+  margin: 0;
+  padding: 14px 0;
+  max-height: 72vh;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.7;
+  tab-size: 4;
+  counter-reset: line;
+}
+
+.code .ln {
+  padding-right: 20px;
+}
+
+/* Line number gutter generated with a CSS counter */
+.code .ln::before {
+  counter-increment: line;
+  content: counter(line);
+  display: inline-block;
+  width: 3.5em;
+  margin-right: 16px;
+  padding-right: 12px;
+  border-right: 1px solid var(--border);
+  color: var(--faint);
+  text-align: right;
+  user-select: none;
+}
+
+/* --- Hex dump --- */
+.hex {
+  margin: 0;
+  padding: 16px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.75;
+  color: var(--muted);
+}
+
+/* --- Rendered documents (Word, Markdown) --- */
+.prose {
+  padding: 28px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: 15px;
+  line-height: 1.75;
+  overflow-wrap: break-word;
+}
+
+.prose > :first-child {
+  margin-top: 0;
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
+  margin: 1.8em 0 0.5em;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+
+.prose h1 { font-size: 1.75em; }
+.prose h2 { font-size: 1.35em; }
+.prose h3 { font-size: 1.12em; }
+
+.prose a {
+  color: var(--accent);
+  text-underline-offset: 3px;
+}
+
+.prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-xs);
+}
+
+.prose code {
+  padding: 0.15em 0.4em;
+  border-radius: var(--radius-xs);
+  background: var(--subtle);
+  font-family: var(--mono);
+  font-size: 0.85em;
+}
+
+.prose pre {
+  padding: 14px 16px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--subtle);
+}
+
+.prose pre code {
+  padding: 0;
+  background: none;
+}
+
+.prose blockquote {
+  margin: 1.2em 0;
+  padding-left: 16px;
+  border-left: 2px solid var(--accent);
+  color: var(--muted);
+}
+
+.prose table {
+  display: block;
+  max-width: 100%;
+  margin: 1.2em 0;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+.prose th,
+.prose td {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+}
+
+.prose hr {
+  margin: 2em 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+/* --- Data tables (CSV, spreadsheets, ZIP listing) --- */
+.table-wrap {
+  max-height: 72vh;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.data-table {
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.data-table th,
+.data-table td {
+  max-width: 320px;
+  padding: 7px 14px;
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+
+.data-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+.data-table tbody tr:hover td {
+  background: var(--subtle);
+}
+
+/* Sticky header row */
+.data-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--subtle);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Sticky row-number column */
+.data-table .rn {
+  position: sticky;
+  left: 0;
+  border-right: 1px solid var(--border);
+  background: var(--subtle);
+  color: var(--faint);
+  font-weight: 400;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.data-table thead .rn {
+  z-index: 2;
+}
+
+/* Spreadsheet mode: grid lines + centred A/B/C headers */
+.data-table.is-sheet td {
+  border-right: 1px solid var(--border);
+}
+
+.data-table.is-sheet thead th {
+  text-align: center;
+}
+
+/* --- Sheet switcher pills --- */
+.pills {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding-bottom: 2px;
+  overflow-x: auto;
+}
+
+.pill {
+  flex: none;
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.pill:hover {
+  color: var(--text);
+}
+
+.pill[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* --- Presentation slides --- */
+.slides {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.slide {
+  display: flex;
+  flex-direction: column;
+  aspect-ratio: 16 / 9;
+  padding: 16px 18px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.slide-num {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--accent);
+}
+
+.slide-title {
+  margin: 8px 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+}
+
+.slide p {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+
+/* ==========================================================================
+   13. Details tab — key/value rows grouped in sections
+   ========================================================================== */
+
+.details-section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.details-section + .details-section,
+.details-section + .notice,
+.notice + .details-section {
+  margin-top: 16px;
+}
+
+/* Section header styled like a code comment: "// general" */
+.details-title {
+  margin: 0;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--subtle);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--faint);
+  text-transform: lowercase;
+}
+
+.details-title::before {
+  content: "// ";
+  color: var(--accent);
+}
+
+.details-list {
+  margin: 0;
+}
+
+.details-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.details-row:last-child {
+  border-bottom: 0;
+}
+
+.details-row dt {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--faint);
+}
+
+.details-row dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Technical values (MIME type, checksum) */
+.details-row .mono {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+
+/* ==========================================================================
+   14. Toast — "> Added 12 files"
+   ========================================================================== */
+
+.toast {
+  position: fixed;
+  bottom: calc(20px + var(--statusbar) + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  z-index: 70;
+  max-width: calc(100vw - 2 * var(--gutter));
+  padding: 9px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-family: var(--mono);
+  font-size: 12px;
+  box-shadow: var(--shadow);
+  transform: translateX(-50%);
+  animation: rise 0.2s var(--ease);
+}
+
+.toast::before {
+  content: "> ";
+  color: var(--accent);
+}
+
+
+/* ==========================================================================
+   15. Status bar (desktop only — shown in section 17)
+   ========================================================================== */
+
+.statusbar {
+  display: none;
+}
+
+/* Coloured dot reflecting the current state (set by app.js → setStatus) */
+.status-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-state::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--faint);
+}
+
+.status-state[data-state="ready"]::before {
+  background: var(--accent);
+}
+
+.status-state[data-state="loading"]::before {
+  background: var(--warning);
+  animation: blink 0.8s steps(1) infinite;
+}
+
+.status-state[data-state="error"]::before {
+  background: var(--danger);
+}
+
+.status-file {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.status-end {
+  display: flex;
+  gap: 16px;
+}
+
+
+/* ==========================================================================
+   16. Tablet and up (≥ 600px)
+   ========================================================================== */
+
+@media (min-width: 600px) {
+  :root {
+    --gutter: 24px;
+  }
+
+  /* Top-bar "open" button gets its text label */
+  .topbar .btn-primary {
+    width: auto;
+    padding: 0 14px 0 10px;
+  }
+
+  .btn-label {
+    display: inline;
+  }
+
+  .doc {
+    padding-top: 36px;
+  }
+
+  .doc-title {
+    font-size: 26px;
+  }
+
+  .prose {
+    padding: 48px 56px;
+  }
+
+  .stage {
+    padding: 32px;
+  }
+
+  .slides {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Details: label and value side by side */
+  .details-row {
+    grid-template-columns: 180px minmax(0, 1fr);
+    gap: 24px;
+    align-items: baseline;
+  }
+}
+
+
+/* ==========================================================================
+   17. Desktop (≥ 900px)
+   ========================================================================== */
+
+@media (min-width: 900px) {
+  :root {
+    --statusbar: 26px;
+  }
+
+  /* No drawer on desktop */
+  .drawer-btn,
+  .scrim {
+    display: none !important;
+  }
+
+  /* Two columns that fill the window between top bar and status bar.
+     minmax(0, 1fr) + min-height: 0 let each column scroll on its own. */
+  .layout {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    height: calc(100vh - var(--topbar) - var(--statusbar));
+    height: calc(100dvh - var(--topbar) - var(--statusbar));
+  }
+
+  /* Sidebar becomes a normal column */
+  .sidebar {
+    position: static;
+    z-index: auto;
+    min-height: 0;
+    width: auto;
+    padding-top: 0;
+    background: var(--bg);
+    transform: none;
+    transition: none;
+  }
+
+  .sidebar.is-open {
+    box-shadow: none;
+  }
+
+  .viewer {
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .empty {
+    min-height: calc(100% - 2 * var(--gutter));
+  }
+
+  .doc {
+    padding-right: 48px;
+    padding-left: 48px;
+  }
+
+  /* Previews fill the remaining window height */
+  .frame {
+    height: calc(100dvh - 320px);
+    min-height: 480px;
+  }
+
+  .code,
+  .table-wrap {
+    max-height: calc(100dvh - 320px);
+  }
+
+  .pdf-pages {
+    padding: 20px;
+  }
+
+  .slides {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+
+  /* Status bar along the bottom edge */
+  .statusbar {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    height: var(--statusbar);
+    padding: 0 16px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--faint);
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+}
+
+
+/* ==========================================================================
+   18. Input & motion preferences
+   ========================================================================== */
+
+/* Mouse users: reveal the remove (×) button on hover only */
+@media (hover: hover) {
+  .remove-btn {
+    opacity: 0;
+  }
+
+  .file-item:hover .remove-btn,
+  .remove-btn:focus-visible {
+    opacity: 1;
+  }
+}
+
+/* Respect "Reduce motion" in OS settings (WCAG 2.3.3) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0s !important;
+    animation-duration: 0s !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+
+/* ==========================================================================
+   19. Help guide dialog
+   A native <dialog> laid out as: title bar → scrolling body → footer.
+   ========================================================================== */
+
+/* "new here? read the guide" link on the empty state */
+.text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: none;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.text-link:hover {
+  color: var(--accent);
+}
+
+/* Dialog box. Padding stays 0 so a click on the <dialog> itself means
+   the backdrop was clicked (used to close it in app.js). */
+.help {
+  width: min(680px, 100% - 2 * var(--gutter));
+  max-height: min(86vh, 780px);
+  margin: auto;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+/* Only lay it out while open — the browser hides closed dialogs */
+.help[open] {
+  display: flex;
+  flex-direction: column;
+  animation: rise 0.2s var(--ease);
+}
+
+/* Literal colour: older browsers don't pass CSS variables to ::backdrop */
+.help::backdrop {
+  background: rgba(10, 12, 15, 0.5);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+/* Title bar styled like the terminal window on the start screen */
+.help-bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 6px 6px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--subtle);
+}
+
+.help-close {
+  width: 30px;
+  height: 30px;
+  margin-left: auto;
+}
+
+/* Scrolling content */
+.help-body {
+  flex: 1;
+  min-height: 0;
+  padding: 24px 20px 28px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding-top: 16px;
+  line-height: 1.65;
+}
+
+.help-body p {
+  margin: 0 0 12px;
+  color: var(--muted);
+}
+
+.help-body strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* UI names mentioned in the text, e.g. "open" or "Details" */
+.help-body em {
+  padding: 1px 5px;
+  border-radius: var(--radius-xs);
+  background: var(--subtle);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.86em;
+  font-style: normal;
+}
+
+.help-kicker {
+  margin-bottom: 4px !important;
+  color: var(--accent) !important;
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+
+.help-title {
+  margin: 0 0 12px;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.help-body .help-lead {
+  color: var(--text);
+  font-size: 15px;
+}
+
+/* Contents: chips linking to each section */
+.help-toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 20px 0 4px;
+}
+
+.help-toc a {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.help-toc a:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Each numbered section, separated by a rule */
+.help-section {
+  margin-top: 28px;
+  padding-top: 22px;
+  border-top: 1px solid var(--border);
+}
+
+.help-heading {
+  margin: 0 0 14px;
+  font-family: var(--mono);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.help-heading span {
+  margin-right: 8px;
+  color: var(--accent);
+}
+
+/* Numbered quick-start steps */
+.help-steps {
+  margin: 0;
+  padding-left: 1.6em;
+}
+
+.help-steps li {
+  margin-bottom: 10px;
+  padding-left: 4px;
+  color: var(--muted);
+}
+
+.help-steps li::marker {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Bullet lists with a "›" marker */
+.help-list {
+  margin: 0;
+  padding-left: 1.2em;
+  list-style-type: "›  ";
+}
+
+.help-list li {
+  margin-bottom: 8px;
+  color: var(--muted);
+}
+
+.help-list li::marker {
+  color: var(--accent);
+  font-family: var(--mono);
+}
+
+/* Label / description rows (tabs, formats, shortcuts) */
+.help-defs,
+.help-formats,
+.help-shortcuts {
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.help-defs > div,
+.help-formats > div {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.help-defs > div:last-child,
+.help-formats > div:last-child,
+.help-shortcuts > div:last-child {
+  border-bottom: 0;
+}
+
+.help-defs dt,
+.help-formats dt {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.help-defs dd,
+.help-formats dd {
+  margin: 0;
+  color: var(--muted);
+}
+
+.help-shortcuts > div {
+  gap: 12px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.help-body .help-note {
+  margin: 12px 0 0;
+  font-size: 13px;
+}
+
+/* Footer: Esc hint + "got it" */
+.help-foot {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--subtle);
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+/* Wider screens: more padding, labels beside descriptions */
+@media (min-width: 600px) {
+  .help-body {
+    padding: 32px 36px 36px;
+  }
+
+  .help-title {
+    font-size: 26px;
+  }
+
+  .help-defs > div,
+  .help-formats > div {
+    grid-template-columns: 130px minmax(0, 1fr);
+    gap: 16px;
+    align-items: baseline;
+  }
+}
